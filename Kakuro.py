@@ -9,6 +9,12 @@ from tkinter import messagebox
 
 #Para manipular archivos de información.
 import json
+#Función de juego
+def juego():
+    jueg = tk.Toplevel(kaku)
+    jueg.title("Jugar Kakuro")
+    jueg.geometry("700x600")
+
 #Interfaz grafica principal.
 kaku = tk.Tk()
 
@@ -23,7 +29,7 @@ kaku.config(menu=menubar)
 
 filemenu = tk.Menu(menubar, tearoff=0)
 
-menubar.add_command(label="Jugar")
+menubar.add_command(label="Jugar",command=juego)
 
 
 menubar.add_command(label="Configuración")
@@ -31,7 +37,7 @@ menubar.add_command(label = "Acerca de")
 
 
 menubar.add_command(label = "Ayuda")
-menubar.add_command(label = "Adios", command= kaku.destroy)
+menubar.add_command(label = "HOLA", command= kaku.destroy)
 
 
 kaku.mainloop()
