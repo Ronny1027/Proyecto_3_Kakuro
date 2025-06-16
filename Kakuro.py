@@ -31,7 +31,7 @@ menubar.add_command(label = "Acerca de")
 
 
 menubar.add_command(label = "Ayuda")
-menubar.add_command(label = "Salir", command= kaku.destroy)
+menubar.add_command(label = "Adios", command= kaku.destroy)
 
 
 kaku.mainloop()
