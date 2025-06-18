@@ -7,6 +7,11 @@ from tkinter import messagebox
 
 #Para manipular archivos de información.
 import json
+#Cargar las partidas de juego
+def cargar_partida():
+    with open("kakuro2025_partidas.json","r") as w:
+        partidas = json.load(w)
+        return partidas[0]
 #Interfaz grafica de la configuración.
 def configura():
     confi = tk.Toplevel(kaku)
@@ -107,8 +112,38 @@ def configura():
     btn_acept.grid(row=0, column=0,padx=5)
     btn_cancel = tk.Button(frame_btons,text = "Volver",command= confi.destroy)
     btn_cancel.grid(row=0, column=1,padx=5)
+#Dibujar las especificaciones de la partida.
+def dibujar_claves_y_casillas(canvas, claves):
+    casillas = {}
 
+    for clave in claves:
+        f = clave["fila"]
+        c = clave["columna"]
+        tipo = clave["tipo_de_clave"]
+        valor = clave["clave"]
 
+        pos = (f, c)
+        if pos not in casillas:
+            casillas[pos] = {}
+
+        casillas[pos][tipo] = valor
+
+    for (f, c), tipos in casillas.items():
+        x1 = (c - 1) * TAM_CELDA
+        y1 = (f - 1) * TAM_CELDA
+        x2 = x1 + TAM_CELDA
+        y2 = y1 + TAM_CELDA
+
+        # Casilla clave con fondo gris oscuro
+        canvas.create_rectangle(x1, y1, x2, y2, fill="gray25", outline="black")
+
+        # Dibujar clave vertical ("C") arriba a la izquierda
+        if "C" in tipos and tipos["C"] != 0:
+            canvas.create_text(x1 + 5, y1 + 5, text=str(tipos["C"]), anchor="nw", fill="white", font=("Arial", 9, "bold"))
+
+        # Dibujar clave horizontal ("F") abajo a la derecha
+        if "F" in tipos and tipos["F"] != 0:
+            canvas.create_text(x2 - 5, y2 - 5, text=str(tipos["F"]), anchor="se", fill="white", font=("Arial", 9, "bold"))
 #Interfax grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
@@ -121,6 +156,7 @@ def dibujar_cuadricula(canvas):
     for j in range(COLUMNAS + 1):
         canvas.create_line(j * TAM_CELDA, 0, j * TAM_CELDA, FILAS * TAM_CELDA)
 def juego():
+    partida = cargar_partida()
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -137,6 +173,7 @@ def juego():
     canvas = tk.Canvas(frame_tablero, width=ancho_canvas, height=alto_canvas, bg="white", highlightthickness=0)
     canvas.grid(row=0, column=0)
     dibujar_cuadricula(canvas)
+    dibujar_claves_y_casillas(canvas, partida["claves"])
 
     btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink")
     btn_ini.grid(row=1, column=0, pady=5)
