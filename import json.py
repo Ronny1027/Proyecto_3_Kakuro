@@ -10,21 +10,84 @@ nueva_partida = {
     "nivel_de_dificultad": "FÁCIL",
     "partida": 1,
     "claves": [
-        {
-            "tipo_de_clave": "F",
-            "fila": 2,
-            "columna": 1,
-            "clave": 10,
-            "casillas": 3
-        },
-        {
-            "tipo_de_clave": "C",
-            "fila": 1,
-            "columna": 2,
-            "clave": 15,
-            "casillas": 4
-        }
-    ]
+        {"tipo_de_clave": "F", "fila": 1, "columna": 1, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 1, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 2, "clave": 25, "casillas": 4 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 2, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 3, "clave": 44, "casillas": 8 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 3, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 4, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 1, "columna": 4, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 5, "clave": 20, "casillas": 3 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 5, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 6, "clave": 10, "casillas": 3 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 6, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 7, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 1, "columna": 7, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 8, "clave": 39, "casillas": 8 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 8, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "F", "fila": 1, "columna": 9, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "C", "fila": 1, "columna": 9, "clave": 16, "casillas": 2 },
+        
+        {"tipo_de_clave": "F", "fila": 2, "columna": 1, "clave": 10, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 2, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 2, "columna": 4, "clave": 10, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 2, "columna": 4, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 2, "columna": 8, "clave": 8, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 2, "columna": 8, "clave": 0, "casillas": 0},
+
+        {"tipo_de_clave": "F", "fila": 3, "columna": 1, "clave": 16, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 3, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 3, "columna": 4, "clave": 16, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 3, "columna": 4, "clave": 26, "casillas": 4},
+        {"tipo_de_clave": "F", "fila": 3, "columna": 8, "clave": 12, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 3, "columna": 8, "clave": 14, "casillas": 4},
+
+        {"tipo_de_clave": "F", "fila": 4, "columna": 1, "clave": 29, "casillas": 7},
+        {"tipo_de_clave": "C", "fila": 4, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 4, "columna": 9, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 4, "columna": 9, "clave": 0, "casillas": 0},
+
+        {"tipo_de_clave": "F", "fila": 5, "columna": 1, "clave": 7, "casillas": 3},
+        {"tipo_de_clave": "C", "fila": 5, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 5, "columna": 5, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 5, "columna": 5, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 5, "columna": 6, "clave": 3, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 5, "columna": 6, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 5, "columna": 9, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 5, "columna": 9, "clave": 12, "casillas": 4},
+
+        {"tipo_de_clave": "F", "fila": 6, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 6, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 6, "columna": 2, "clave": 17, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 6, "columna": 2, "clave": 0, "casillas": 0 },
+        {"tipo_de_clave": "F", "fila": 6, "columna": 5, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 6, "columna": 5, "clave": 18, "casillas": 3},
+        {"tipo_de_clave": "F", "fila": 6, "columna": 6, "clave": 12, "casillas": 3 },
+        {"tipo_de_clave": "C", "fila": 6, "columna": 6, "clave": 6, "casillas": 3 },
+
+        {"tipo_de_clave": "F", "fila": 7, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "C", "fila": 7, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 7, "columna": 2, "clave": 42, "casillas": 7},
+        {"tipo_de_clave": "C", "fila": 7, "columna": 2, "clave": 11, "casillas": 11},
+
+        {"tipo_de_clave": "F", "fila": 8, "columna": 1, "clave": 17, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 8, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 8, "columna": 4, "clave": 5, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 8, "columna": 4, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 8, "columna": 7, "clave": 11, "casillas": 2 },
+        {"tipo_de_clave": "C", "fila": 8, "columna": 7, "clave": 0, "casillas": 0 },
+
+        {"tipo_de_clave": "F", "fila": 9, "columna": 1, "clave": 9, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 9, "columna": 1, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 9, "columna": 4, "clave": 11, "casillas": 2},
+        {"tipo_de_clave": "C", "fila": 9, "columna": 4, "clave": 0, "casillas": 0},
+        {"tipo_de_clave": "F", "fila": 9, "columna": 7, "clave": 6, "casillas": 2 },
+        {"tipo_de_clave": "C", "fila": 9, "columna": 7, "clave": 0, "casillas": 0 },
+
+        ]
+        
+    
 }
 partidas.append(nueva_partida)
 
