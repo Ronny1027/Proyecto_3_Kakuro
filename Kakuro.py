@@ -7,7 +7,109 @@ from tkinter import messagebox
 
 #Para manipular archivos de información.
 import json
-#Función de juego
+#Interfaz grafica de la configuración.
+def configura():
+    confi = tk.Toplevel(kaku)
+    confi.title("Configuración de juego")
+    confi.geometry("500x400")
+    frame_nive = tk.Frame(confi)
+    tk.Label(frame_nive, text="Configuración de juego", anchor='w').pack(padx=20)
+    tk.Label(frame_nive, text="Nivel", anchor='w').pack(padx=20)
+    frame_nive.pack(pady=10)
+    difi_var = tk.StringVar(value="Fácil")  # valor por default
+    tk.Radiobutton(frame_nive, text="Fácil", variable=difi_var, value="Fácil").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Medio", variable=difi_var, value="Medio").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Difícil", variable=difi_var, value="Difícil").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Experto", variable=difi_var, value="Experto").pack(anchor="w", padx=20)
+    
+    frame_tiemp = tk.Frame(confi)
+    frame_tiemp.pack(pady=10)
+    tk.Label(frame_tiemp, text="Reloj", anchor='w').pack(padx=20)
+    relo_var = tk.StringVar(value="crono")  # valor por default
+    tk.Radiobutton(frame_tiemp, text="Cronómetro", variable=relo_var, value="crono").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_tiemp, text="Temporizador", variable=relo_var, value="tempori").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_tiemp, text="No usar reloj", variable=relo_var, value="sinrelo").pack(anchor="w", padx=20)
+    #Entrys en caso de usar temporizador
+    frame_tempo = tk.Frame(confi)
+    frame_tempo.pack(pady=10)
+    label_tempo = tk.Label(frame_tempo, text="Indique el tiempo(caso de temporizador)")
+    label_tempo.grid(row =0,column=1)
+    #Horas
+    label_hora = tk.Label(frame_tempo, text="Horas")
+    label_hora.grid(row =1,column=0)
+    horas_entry= tk.Entry(frame_tempo,width=30)
+    horas_entry.grid(row =1,column=1)
+    #Minutos
+    label_minu = tk.Label(frame_tempo, text="Minutos")
+    label_minu.grid(row =2,column=0)
+    minu_entry= tk.Entry(frame_tempo,width=30)
+    minu_entry.grid(row =2,column=1)
+    #Segundos
+    label_segu = tk.Label(frame_tempo, text="Segundos")
+    label_segu.grid(row =3,column=0)
+    seguns_entry= tk.Entry(frame_tempo,width=30)
+    seguns_entry.grid(row =3,column=1)
+    #Función interna para guardar la informacion
+    def guardar_info():
+        #Se saca la información
+        nivel = difi_var.get()
+        reloj = relo_var.get()
+        horas = horas_entry.get()
+        minuts = minu_entry.get()
+        segunds = seguns_entry.get()
+        temporizador = "No hay"
+        if reloj =="tempori":
+            if horas or minuts or segunds:
+            # Validar que todos sean números enteros.
+                if (horas and not horas.isdigit()) or (minuts and not minuts.isdigit()) or (segunds and not segunds.isdigit()):
+                    messagebox.showerror("Error", "Horas, minutos y segundos deben ser números enteros.")
+                    return
+                h = 0
+                m = 0
+                s = 0
+                if horas != "":
+                    h = int(horas)
+                else:
+                    h = 0
+                if minuts!= "":
+                    m = int(minuts)
+                else:
+                    m = 0
+                if segunds!= "":
+                    s = int(segunds)
+                else:
+                    s = 0
+                if not (0 <= h <= 2):
+                    messagebox.showerror("Error", "Horas debe estar entre 0 y 2.")
+                    return
+                if not (0 <= m <= 59):
+                    messagebox.showerror("Error", "Minutos debe estar entre 0 y 59.")
+                    return
+                if not (0 <= s <= 59):
+                    messagebox.showerror("Error", "Segundos debe estar entre 0 y 59.")
+                    return
+                # Se verifica que no se hayan escrito solo 0
+                if h == 0 and m == 0 and s == 0:
+                    messagebox.showerror("Error", "Debe ingresar al menos un valor diferente de cero para el temporizador.")
+                    return
+                # Si todos las validaciones se cumplen, se forma el temporizador completo.
+                temporizador = f"{h:02}:{m:02}:{s:02}"#el 02 es para agregar ceros de relleno
+            else:
+                temporizador = "No hay"
+        datos = {"Nivel":nivel,
+                "Reloj":reloj,"Temporizador":temporizador}
+        with open("kakuro2025_configuración", "w") as f:#Se abre la información.
+            json.dump(datos, f, indent=4)#Se depositan los datos en archivo.json.
+        confi.destroy
+    frame_btons= tk.Frame(confi)
+    frame_btons.pack(pady=10)
+    btn_acept = tk.Button(frame_btons,text = "Aceptar",command=  guardar_info)
+    btn_acept.grid(row=0, column=0,padx=5)
+    btn_cancel = tk.Button(frame_btons,text = "Volver",command= confi.destroy)
+    btn_cancel.grid(row=0, column=1,padx=5)
+
+
+#Interfax grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
 COLUMNAS = 9
@@ -96,7 +198,9 @@ def juego():
 
     btn_record = tk.Button(frame_botones, text="Records",width=12, bg="yellow")
     btn_record.grid(row=1, column=3, pady=5,padx=5)
-    
+
+    btn_cancel = tk.Button(frame_botones,text = "Volver",command= jueg.destroy,width=12, bg="red")
+    btn_cancel.grid(row=0, column=3,pady=5,padx=5)
     
 #Interfaz grafica principal.
 kaku = tk.Tk()
@@ -115,7 +219,7 @@ filemenu = tk.Menu(menubar, tearoff=0)
 menubar.add_command(label="Jugar",command=juego)
 
 
-menubar.add_command(label="Configuración")
+menubar.add_command(label="Configuración",command= configura)
 menubar.add_command(label = "Acerca de")
 
 
