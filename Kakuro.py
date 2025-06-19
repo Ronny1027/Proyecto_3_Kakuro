@@ -11,7 +11,7 @@ import json
 def cargar_partida():
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
-        return partidas[2]
+        return partidas[0]
 #Interfaz grafica de la configuración.
 def configura():
     confi = tk.Toplevel(kaku)
