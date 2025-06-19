@@ -11,7 +11,7 @@ import json
 def cargar_partida():
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
-        return partidas[0]
+        return partidas[2]
 #Interfaz grafica de la configuración.
 def configura():
     confi = tk.Toplevel(kaku)
@@ -37,7 +37,7 @@ def configura():
     #Entrys en caso de usar temporizador
     frame_tempo = tk.Frame(confi)
     frame_tempo.pack(pady=10)
-    label_tempo = tk.Label(frame_tempo, text="Indique el tiempo(caso de temporizador)")
+    label_tempo = tk.Label(frame_tempo, text="Indique el tiempo(en caso de elegir temporizador)")
     label_tempo.grid(row =0,column=1)
     #Horas
     label_hora = tk.Label(frame_tempo, text="Horas")
@@ -112,10 +112,58 @@ def configura():
     btn_acept.grid(row=0, column=0,padx=5)
     btn_cancel = tk.Button(frame_btons,text = "Volver",command= confi.destroy)
     btn_cancel.grid(row=0, column=1,padx=5)
-#Dibujar las especificaciones de la partida.
-def dibujar_claves_y_casillas(canvas, claves):
+#Funciones para el kakuro
+#Variables necesarias para el proceso de juego
+numero_selec = None
+entrada_casillas = {}
+boton_act = None
+casi_selec = None
+#Función para quitarle el color verde al boton
+def deseleccionar_botones():
+    global boton_act
+    if boton_act!= None:
+        boton_act.config(bg="SystemButtonFace")
+        boton_act = None
+#Función para poder colocar el número con las coordenadas
+def colocar_numero(entry_widget, fila, col):
+    global numero_selec
+    global casi_selec
+    if numero_selec is None:
+        messagebox.showerror("Error", "Debe seleccionar un número")
+        return
+    cont_actual = entry_widget.get()
+    if cont_actual != "":
+        messagebox.showerror("Error", "Ya hay un número en esa casilla")
+        return
+    entry_widget.config(state="normal")#Se pone el estado editable
+    entry_widget.insert(0, str(numero_selec))#Se inserta el número
+    entry_widget.config(state="readonly")#Se vuelve a poner el estado ineditable
+    casi_selec = entry_widget
+    deseleccionar_botones()  #Quitar el color despues del proceso
+    numero_selec = None#Se reinicia el valor
+#Función para poner el boton en verde.
+def seleccionar_numero(n, boton):
+    global numero_selec
+    global boton_act
+    numero_selec = n#El numero pasa a ser el valor del boton
+    if boton_act != None:#Si se presiona el botón
+        boton_act.config(bg="SystemButtonFace")  # Reinicar boton anterior
+    boton_act = boton#El boton pasa a tener un nuevo valor
+    boton_act.config(bg="green")
+#Función para hacer el proceso de borrar el número de una casilla.
+def borrar_casi():
+    global casi_selec
+    if casi_selec == None:
+        messagebox.showerror("Error", "Debe seleccionar una casilla")
+        return
+    casi_selec.config(state="normal")#Para poder editar la casilla
+    casi_selec.delete(0, tk.END)
+    casi_selec.config(state="readonly")
+    casi_selec = None#se reinicia el valor
+#Dibujar la cuadricula
+def dibujar_claves_y_casillas(canvas, claves,frame_tablero):
     casillas = {}
-
+    usadas = set()
     for clave in claves:
         f = clave["fila"]
         c = clave["columna"]
@@ -123,28 +171,36 @@ def dibujar_claves_y_casillas(canvas, claves):
         valor = clave["clave"]
 
         pos = (f, c)
+        usadas.add(pos)
         if pos not in casillas:
             casillas[pos] = {}
 
         casillas[pos][tipo] = valor
 
-    for (f, c), tipos in casillas.items():
-        x1 = (c - 1) * TAM_CELDA
-        y1 = (f - 1) * TAM_CELDA
-        x2 = x1 + TAM_CELDA
-        y2 = y1 + TAM_CELDA
+    for fila in range(1, FILAS + 1):
+        for col in range(1, COLUMNAS + 1):
+            x1 = (col - 1) * TAM_CELDA
+            y1 = (fila - 1) * TAM_CELDA
+            x2 = x1 + TAM_CELDA
+            y2 = y1 + TAM_CELDA
 
-        # Casilla clave con fondo gris oscuro
-        canvas.create_rectangle(x1, y1, x2, y2, fill="gray25", outline="black")
-
-        # Dibujar clave vertical ("C") arriba a la izquierda
-        if "C" in tipos and tipos["C"] != 0:
-            canvas.create_text(x1 + 5, y1 + 5, text=str(tipos["C"]), anchor="nw", fill="white", font=("Arial", 9, "bold"))
-
-        # Dibujar clave horizontal ("F") abajo a la derecha
-        if "F" in tipos and tipos["F"] != 0:
-            canvas.create_text(x2 - 5, y2 - 5, text=str(tipos["F"]), anchor="se", fill="white", font=("Arial", 9, "bold"))
-#Interfax grafica del juego
+            pos = (fila, col)
+            if pos in casillas:
+                canvas.create_rectangle(x1, y1, x2, y2, fill="gray25", outline="black")
+                tipos = casillas[pos]
+                #Se dibuja la linea en medio de la casilla en caso de haber números
+                if (tipos.get("F", 0) != 0) or (tipos.get("C", 0) != 0):
+                    canvas.create_line(x1, y1, x2, y2, fill="white")
+                if "C" in tipos and tipos["C"] != 0:
+                    canvas.create_text(x1 + 5, y2 - 5, text=str(tipos["C"]), anchor="sw", fill="white", font=("Arial", 9, "bold"))
+                if "F" in tipos and tipos["F"] != 0:
+                    canvas.create_text(x2 - 5, y1 + 5, text=str(tipos["F"]), anchor="ne", fill="white", font=("Arial", 9, "bold"))
+            else:
+                entry = tk.Entry(frame_tablero, width=2, justify='center', font=("Arial", 12), state="readonly")
+                entry.place(x=x1 + 12, y=y1 + 12, width=25, height=25)
+                entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
+                entrada_casillas[(fila, col)] = entry
+#Interfaz grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
 COLUMNAS = 9
@@ -156,7 +212,7 @@ def dibujar_cuadricula(canvas):
     for j in range(COLUMNAS + 1):
         canvas.create_line(j * TAM_CELDA, 0, j * TAM_CELDA, FILAS * TAM_CELDA)
 def juego():
-    partida = cargar_partida()
+    partida = cargar_partida()#Valor aleatorio del json
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -168,12 +224,13 @@ def juego():
     frame_tablero = tk.Frame(frame_principal)
     frame_tablero.grid(row=0, column=0, padx=5)
 
+    
     ancho_canvas = COLUMNAS * TAM_CELDA + 1
     alto_canvas = FILAS * TAM_CELDA + 1
     canvas = tk.Canvas(frame_tablero, width=ancho_canvas, height=alto_canvas, bg="white", highlightthickness=0)
     canvas.grid(row=0, column=0)
     dibujar_cuadricula(canvas)
-    dibujar_claves_y_casillas(canvas, partida["claves"])
+    dibujar_claves_y_casillas(canvas, partida["claves"],frame_tablero)
 
     btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink")
     btn_ini.grid(row=1, column=0, pady=5)
@@ -188,28 +245,37 @@ def juego():
     # Etiqueta de jugador
     tk.Label(frame_contenido, text="Jugador:").pack()
     tk.Entry(frame_contenido, width=25).pack(pady=5)
-
+    b = None
     # Números del 1 al 9
-    btn1 = tk.Button(frame_contenido, text="1", width=6, height=1, bg = "green")
+    btn1 = tk.Button(frame_contenido, text="1", width=6, height=1)
+    btn1.config(command=lambda: seleccionar_numero(1, btn1))
     btn1.pack(pady=7)
-    btn2 = tk.Button(frame_contenido, text="2", width=6, height=1, bg = "green")
+    btn2 = tk.Button(frame_contenido, text="2", width=6, height=1)
+    btn2.config(command=lambda: seleccionar_numero(2, btn2))
     btn2.pack(pady=7)
-    btn3 = tk.Button(frame_contenido, text="3", width=6, height=1, bg = "green")
+    btn3 = tk.Button(frame_contenido, text="3", width=6, height=1)
+    btn3.config(command=lambda: seleccionar_numero(3, btn3))
     btn3.pack(pady=7)
-    btn4 =tk.Button(frame_contenido, text="4", width=6, height=1, bg = "green")
+    btn4 = tk.Button(frame_contenido, text="4", width=6, height=1)
+    btn4.config(command=lambda: seleccionar_numero(4, btn4))
     btn4.pack(pady=7)
-    btn5 = tk.Button(frame_contenido, text="5", width=6, height=1, bg = "green")
+    btn5 = tk.Button(frame_contenido, text="5", width=6, height=1)
+    btn5.config(command=lambda: seleccionar_numero(5, btn5))
     btn5.pack(pady=7)
-    btn6 =tk.Button(frame_contenido, text="6", width=6, height=1, bg = "green")
+    btn6 = tk.Button(frame_contenido, text="6", width=6, height=1)
+    btn6.config(command=lambda: seleccionar_numero(6, btn6))
     btn6.pack(pady=7)
-    btn7 = tk.Button(frame_contenido, text="7", width=6, height=1, bg = "green")
+    btn7 = tk.Button(frame_contenido, text="7", width=6, height=1)
+    btn7.config(command=lambda: seleccionar_numero(7, btn7))
     btn7.pack(pady=7)
-    btn8 =tk.Button(frame_contenido, text="8", width=6, height=1, bg = "green")
+    btn8 = tk.Button(frame_contenido, text="8", width=6, height=1)
+    btn8.config(command=lambda: seleccionar_numero(8, btn8))#Configuración aparte para más orden
     btn8.pack(pady=7)
-    btn9 =tk.Button(frame_contenido, text="9", width=6, height=1, bg = "green")
+    btn9 = tk.Button(frame_contenido, text="9", width=6, height=1)
+    btn9.config(command=lambda: seleccionar_numero(9, btn9))
     btn9.pack(pady=7)
     #Boton especial de borrar
-    tk.Button(frame_contenido, text="Borrar",width=8,).pack(pady=5)
+    tk.Button(frame_contenido, text="Borrar", width=6, height=1, bg="red", fg="white", command=lambda: borrar_casi()).pack(pady=5)
     
     #Para agrupar los botones con opciones especiales(iniciar,guardar,etc)
     frame_botones = tk.Frame(frame_opciones)
