@@ -8,10 +8,14 @@ from tkinter import messagebox
 #Para manipular archivos de información.
 import json
 #Cargar las partidas de juego
-def cargar_partida():
+def cargar_partida_ejem():
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
-        return partidas[0]
+    for partida in partidas:
+        if partida["nivel_de_dificultad"]=="FÁCIL" and partida["partida"]==1 :
+            partida_ejemp = partida
+            break
+    return partida_ejemp
 #Interfaz grafica de la configuración.
 def configura():
     confi = tk.Toplevel(kaku)
@@ -118,12 +122,51 @@ numero_selec = None
 entrada_casillas = {}
 boton_act = None
 casi_selec = None
+pila_desh = []
+pila_reha= []
+#Función para deshacer una jugada
+def deshacer_jugada():
+    if pila_desh == []:
+        messagebox.showerror("Error", "No hay jugadas para deshacer.")
+        return
+    info = pila_desh.pop()
+    fila = info[0]
+    col = info[1]
+    valo_ante = info[2]
+    valor_act = info[3]#se accede a cada elemento de la información de la pila.
+    entry = entrada_casillas[(fila, col)]#Se obtiene la ubicación
+    entry.config(state="normal")
+    entry.delete(0, tk.END)
+    if valo_ante != "":
+        entry.insert(0, valo_ante)
+    entry.config(state="readonly")
+    pila_reha.append((fila, col, valo_ante, valor_act))#El orden de los valores cambia
+#Función para rehacer una jugada.
+def rehacer_jugada():
+    if pila_reha == []:
+        messagebox.showerror("Error", "No hay jugadas para rehacer.")
+        return
+    info2 = pila_reha.pop()
+    fila = info2[0]
+    col = info2[1]
+    valo_ante = info2[2]
+    valor_nuev= info2[3]#se accede a cada elemento de la información de la pila.
+    entry = entrada_casillas[(fila, col)]#Se obtiene la ubicación
+
+    entry.config(state="normal")
+    entry.delete(0, tk.END)
+    if valor_nuev != "":
+        entry.insert(0, valor_nuev)
+    entry.config(state="readonly")
+    pila_desh.append((fila, col, valo_ante, valor_nuev))
+                 
 #Función para quitarle el color verde al boton
 def deseleccionar_botones():
     global boton_act
     if boton_act!= None:
         boton_act.config(bg="SystemButtonFace")
         boton_act = None
+
 #Función para poder colocar el número con las coordenadas
 def colocar_numero(entry_widget, fila, col):
     global numero_selec
@@ -135,6 +178,9 @@ def colocar_numero(entry_widget, fila, col):
     if cont_actual != "":
         messagebox.showerror("Error", "Ya hay un número en esa casilla")
         return
+    valo_ante = entry_widget.get()
+    pila_desh.append((fila, col, valo_ante, numero_selec))
+    pila_reha.clear()
     entry_widget.config(state="normal")#Se pone el estado editable
     entry_widget.insert(0, str(numero_selec))#Se inserta el número
     entry_widget.config(state="readonly")#Se vuelve a poner el estado ineditable
@@ -199,7 +245,7 @@ def dibujar_claves_y_casillas(canvas, claves,frame_tablero):
                 entry = tk.Entry(frame_tablero, width=2, justify='center', font=("Arial", 12), state="readonly")
                 entry.place(x=x1 + 12, y=y1 + 12, width=25, height=25)
                 entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
-                entrada_casillas[(fila, col)] = entry
+                entrada_casillas[(fila, col)] = entry#se guarda la ubicación el diccionario.
 #Interfaz grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
@@ -212,7 +258,7 @@ def dibujar_cuadricula(canvas):
     for j in range(COLUMNAS + 1):
         canvas.create_line(j * TAM_CELDA, 0, j * TAM_CELDA, FILAS * TAM_CELDA)
 def juego():
-    partida = cargar_partida()#Valor aleatorio del json
+    partida = cargar_partida_ejem()#Valor aleatorio del json
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -281,10 +327,10 @@ def juego():
     frame_botones = tk.Frame(frame_opciones)
     frame_botones.pack(pady=10, fill="x")
 
-    btn_desh = tk.Button(frame_botones, text="Deshacer jugada",width=12, bg="lightgreen")
+    btn_desh = tk.Button(frame_botones, text="Deshacer jugada",width=12, bg="lightgreen",command=deshacer_jugada)
     btn_desh.grid(row=0, column=0, pady=5,padx=5)
 
-    btn_reh = tk.Button(frame_botones, text="Rehacer jugada",width=12, bg="lightblue")
+    btn_reh = tk.Button(frame_botones, text="Rehacer jugada",width=12, bg="lightblue",command=rehacer_jugada)
     btn_reh.grid(row=1, column=0, pady=5,padx=5)
 
     btn_borrar = tk.Button(frame_botones, text="Borrar juego",width=12, bg="cyan")
