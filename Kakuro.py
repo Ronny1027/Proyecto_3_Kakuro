@@ -7,15 +7,31 @@ from tkinter import messagebox
 
 #Para manipular archivos de información.
 import json
+#Para seleccionar partida aleatoria
+import random
+
 #Cargar las partidas de juego
-def cargar_partida_ejem():
+partidas_usa = []
+def cargar_partida():
+    global partidas_usa
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
+    with open("kakuro2025_configuración","r") as r:
+        confi = json.load(r)
+    difi = confi["Nivel"]
+    partida_dispo = []
+    restantes = []
     for partida in partidas:
-        if partida["nivel_de_dificultad"]=="FÁCIL" and partida["partida"]==1 :
-            partida_ejemp = partida
-            break
-    return partida_ejemp
+        if partida["nivel_de_dificultad"]== difi:
+            partida_dispo.append(partida)
+    if len(partidas_usa) >= len(partida_dispo):
+        partidas_usa = []
+    for p in partida_dispo:
+        if p not in partidas_usa:
+            restantes.append(p)
+    parti_selec = random.choice(restantes)
+    partidas_usa.append(parti_selec)
+    return parti_selec
 #Interfaz grafica de la configuración.
 def configura():
     confi = tk.Toplevel(kaku)
@@ -26,10 +42,10 @@ def configura():
     tk.Label(frame_nive, text="Nivel", anchor='w').pack(padx=20)
     frame_nive.pack(pady=10)
     difi_var = tk.StringVar(value="Fácil")  # valor por default
-    tk.Radiobutton(frame_nive, text="Fácil", variable=difi_var, value="Fácil").pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_nive, text="Medio", variable=difi_var, value="Medio").pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_nive, text="Difícil", variable=difi_var, value="Difícil").pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_nive, text="Experto", variable=difi_var, value="Experto").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Fácil", variable=difi_var, value="FÁCIL").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Medio", variable=difi_var, value="MEDIO").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Difícil", variable=difi_var, value="DIFÍCIL").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_nive, text="Experto", variable=difi_var, value="EXPERTO").pack(anchor="w", padx=20)
     
     frame_tiemp = tk.Frame(confi)
     frame_tiemp.pack(pady=10)
@@ -61,6 +77,8 @@ def configura():
     #Función interna para guardar la informacion
     def guardar_info():
         #Se saca la información
+        global partidas_usa
+        partidas_usa = []#se reinicia la variable en caso de cambiar la dificultad.
         nivel = difi_var.get()
         reloj = relo_var.get()
         horas = horas_entry.get()
@@ -242,10 +260,24 @@ def dibujar_claves_y_casillas(canvas, claves,frame_tablero):
                 if "F" in tipos and tipos["F"] != 0:
                     canvas.create_text(x2 - 5, y1 + 5, text=str(tipos["F"]), anchor="ne", fill="white", font=("Arial", 9, "bold"))
             else:
-                entry = tk.Entry(frame_tablero, width=2, justify='center', font=("Arial", 12), state="readonly")
-                entry.place(x=x1 + 12, y=y1 + 12, width=25, height=25)
+                entry = tk.Entry(canvas, width=2, justify='center', font=("Arial", 12), state="readonly")
+                canvas.create_window(x1 + TAM_CELDA // 2, y1 + TAM_CELDA // 2, window=entry, width=25, height=25)
                 entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
                 entrada_casillas[(fila, col)] = entry#se guarda la ubicación el diccionario.
+#Funciones de juego(no graficas)
+def ini_relo():
+    global tiemp_relo
+    global tipo_relo
+    global id_relo
+def iniciar_juego(nom,tiemp):
+    if nom == "":
+        messagebox.showerror("Error", "Digite su nombre")
+        return
+    if len(nom)>40 :
+        messagebox.showerror("Error", "Digite un nombre valido")
+        return
+
+
 #Interfaz grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
@@ -258,7 +290,7 @@ def dibujar_cuadricula(canvas):
     for j in range(COLUMNAS + 1):
         canvas.create_line(j * TAM_CELDA, 0, j * TAM_CELDA, FILAS * TAM_CELDA)
 def juego():
-    partida = cargar_partida_ejem()#Valor aleatorio del json
+    partida = cargar_partida()#Valor aleatorio del json
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -270,17 +302,38 @@ def juego():
     frame_tablero = tk.Frame(frame_principal)
     frame_tablero.grid(row=0, column=0, padx=5)
 
-    
+    lbl_titulo = tk.Label(frame_tablero, text="KAKURO", font=("Helvetica", 16, "bold"))
+    lbl_titulo.grid(row=0, column=0, pady=(0, 10))
+    #Se obtiene la cuadricula de las funciones que estan
     ancho_canvas = COLUMNAS * TAM_CELDA + 1
     alto_canvas = FILAS * TAM_CELDA + 1
     canvas = tk.Canvas(frame_tablero, width=ancho_canvas, height=alto_canvas, bg="white", highlightthickness=0)
-    canvas.grid(row=0, column=0)
+    canvas.grid(row=1, column=0)
     dibujar_cuadricula(canvas)
     dibujar_claves_y_casillas(canvas, partida["claves"],frame_tablero)
 
-    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink")
-    btn_ini.grid(row=1, column=0, pady=5)
+    
 
+    lbl_reloj = tk.Label(frame_tablero, text="Reloj:", font=("Arial", 10))
+    lbl_reloj.grid(row=3, column=0, pady=(10, 0))
+
+    entry_reloj = tk.Entry(frame_tablero, width=10, justify="center", font=("Courier", 12))
+    entry_reloj.grid(row=4, column=0, pady=(0, 10))
+
+    with open("kakuro2025_configuración","r") as w:
+        confi = json.load(w)
+    dificul = confi["Nivel"]
+    relo = confi["Reloj"]
+    tempo = confi["Temporizador"]
+    if relo == "tempori":
+        if tempo != "No hay":
+            entry_reloj.insert(0,tempo)
+    if relo == "crono":
+        entry_reloj.insert(0, "00:00:00")
+
+    
+    lbl_nivel = tk.Label(frame_tablero, text=f"Nivel: {dificul}", font=("Arial", 11, "italic"))
+    lbl_nivel.grid(row=5, column=0, pady=(5, 0))
     #Frame para agrupar las opciones de la derecha(nombre,numeros y botones)
     frame_opciones = tk.Frame(frame_principal)
     frame_opciones.grid(row=0, column=1, padx=20, sticky="n")
@@ -290,8 +343,14 @@ def juego():
 
     # Etiqueta de jugador
     tk.Label(frame_contenido, text="Jugador:").pack()
-    tk.Entry(frame_contenido, width=25).pack(pady=5)
+    entry_nom = tk.Entry(frame_contenido, width=25)
+    entry_nom.pack(pady=5)
     b = None
+    nom = entry_nom.get()
+    tiemp = entry_reloj.get()
+    
+    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink",command=lambda: iniciar_juego(nom,tiemp))
+    btn_ini.grid(row=2, column=0, pady=5)
     # Números del 1 al 9
     btn1 = tk.Button(frame_contenido, text="1", width=6, height=1)
     btn1.config(command=lambda: seleccionar_numero(1, btn1))
