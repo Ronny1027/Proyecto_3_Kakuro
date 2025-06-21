@@ -142,6 +142,7 @@ boton_act = None
 casi_selec = None
 pila_desh = []
 pila_reha= []
+jugadas = {}
 #Función para deshacer una jugada
 def deshacer_jugada():
     if pila_desh == []:
@@ -152,13 +153,19 @@ def deshacer_jugada():
     col = info[1]
     valo_ante = info[2]
     valor_act = info[3]#se accede a cada elemento de la información de la pila.
+
     entry = entrada_casillas[(fila, col)]#Se obtiene la ubicación
     entry.config(state="normal")
     entry.delete(0, tk.END)
     if valo_ante != "":
         entry.insert(0, valo_ante)
+        jugadas[(fila, col)] = valo_ante
+    else:
+        if (fila, col) in jugadas:
+            del jugadas[(fila, col)]
     entry.config(state="readonly")
     pila_reha.append((fila, col, valo_ante, valor_act))#El orden de los valores cambia
+
 #Función para rehacer una jugada.
 def rehacer_jugada():
     if pila_reha == []:
@@ -175,6 +182,10 @@ def rehacer_jugada():
     entry.delete(0, tk.END)
     if valor_nuev != "":
         entry.insert(0, valor_nuev)
+        jugadas[(fila, col)] = valor_nuev
+    else:
+        if (fila, col) in jugadas:
+            del jugadas[(fila, col)]
     entry.config(state="readonly")
     pila_desh.append((fila, col, valo_ante, valor_nuev))
                  
@@ -184,6 +195,16 @@ def deseleccionar_botones():
     if boton_act!= None:
         boton_act.config(bg="SystemButtonFace")
         boton_act = None
+#Función para validar la información de la jugada.
+def es_jugada_valida(fila, col, valor):
+    for (f, c), v in jugadas.items():
+        if f == fila and v == valor:
+            messagebox.showerror("Error", f"Ya existe el número {valor} en la fila")
+            return False
+        if c == col and v == valor:
+            messagebox.showerror("Error", f"Ya existe el número {valor} en la columna")
+            return False
+    return True
 
 #Función para poder colocar el número con las coordenadas
 def colocar_numero(entry_widget, fila, col):
@@ -196,12 +217,18 @@ def colocar_numero(entry_widget, fila, col):
     if cont_actual != "":
         messagebox.showerror("Error", "Ya hay un número en esa casilla")
         return
+    #Validación de jugada valida
+    if not es_jugada_valida(fila, col, numero_selec):
+        return
     valo_ante = entry_widget.get()
     pila_desh.append((fila, col, valo_ante, numero_selec))
     pila_reha.clear()
+
     entry_widget.config(state="normal")#Se pone el estado editable
     entry_widget.insert(0, str(numero_selec))#Se inserta el número
     entry_widget.config(state="readonly")#Se vuelve a poner el estado ineditable
+
+    jugadas[(fila, col)] = numero_selec#se guarda la información de la jugada
     casi_selec = entry_widget
     deseleccionar_botones()  #Quitar el color despues del proceso
     numero_selec = None#Se reinicia el valor
@@ -224,8 +251,21 @@ def borrar_casi():
     casi_selec.delete(0, tk.END)
     casi_selec.config(state="readonly")
     casi_selec = None#se reinicia el valor
+#Poner los entry en las casillas jugables.
+def crear_casillas_jugables(canvas, claves, frame_tablero):
+    jugables = set()
+    usadas = {(clave["fila"], clave["columna"]) for clave in claves}
+    for fila in range(1, FILAS + 1):
+        for col in range(1, COLUMNAS + 1):
+            if (fila, col) not in usadas:
+                x1 = (col - 1) * TAM_CELDA
+                y1 = (fila - 1) * TAM_CELDA
+                entry = tk.Entry(canvas, width=2, justify='center', font=("Arial", 12), state="readonly")
+                canvas.create_window(x1 + TAM_CELDA // 2, y1 + TAM_CELDA // 2, window=entry, width=25, height=25)
+                entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
+                entrada_casillas[(fila, col)] = entry
 #Dibujar la cuadricula
-def dibujar_claves_y_casillas(canvas, claves,frame_tablero):
+def dibujar_claves_y_casillas(canvas, claves,):
     casillas = {}
     usadas = set()
     for clave in claves:
@@ -233,49 +273,41 @@ def dibujar_claves_y_casillas(canvas, claves,frame_tablero):
         c = clave["columna"]
         tipo = clave["tipo_de_clave"]
         valor = clave["clave"]
-
         pos = (f, c)
         usadas.add(pos)
         if pos not in casillas:
             casillas[pos] = {}
 
         casillas[pos][tipo] = valor
-
     for fila in range(1, FILAS + 1):
         for col in range(1, COLUMNAS + 1):
             x1 = (col - 1) * TAM_CELDA
             y1 = (fila - 1) * TAM_CELDA
             x2 = x1 + TAM_CELDA
             y2 = y1 + TAM_CELDA
-
             pos = (fila, col)
             if pos in casillas:
                 canvas.create_rectangle(x1, y1, x2, y2, fill="gray25", outline="black")
                 tipos = casillas[pos]
-                #Se dibuja la linea en medio de la casilla en caso de haber números
                 if (tipos.get("F", 0) != 0) or (tipos.get("C", 0) != 0):
                     canvas.create_line(x1, y1, x2, y2, fill="white")
                 if "C" in tipos and tipos["C"] != 0:
                     canvas.create_text(x1 + 5, y2 - 5, text=str(tipos["C"]), anchor="sw", fill="white", font=("Arial", 9, "bold"))
                 if "F" in tipos and tipos["F"] != 0:
                     canvas.create_text(x2 - 5, y1 + 5, text=str(tipos["F"]), anchor="ne", fill="white", font=("Arial", 9, "bold"))
-            else:
-                entry = tk.Entry(canvas, width=2, justify='center', font=("Arial", 12), state="readonly")
-                canvas.create_window(x1 + TAM_CELDA // 2, y1 + TAM_CELDA // 2, window=entry, width=25, height=25)
-                entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
-                entrada_casillas[(fila, col)] = entry#se guarda la ubicación el diccionario.
 #Funciones de juego(no graficas)
 def ini_relo():
     global tiemp_relo
     global tipo_relo
     global id_relo
 def iniciar_juego(nom,tiemp):
-    if nom == "":
+    if nom =="":
         messagebox.showerror("Error", "Digite su nombre")
         return
     if len(nom)>40 :
         messagebox.showerror("Error", "Digite un nombre valido")
         return
+    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
 
 
 #Interfaz grafica del juego
@@ -290,6 +322,9 @@ def dibujar_cuadricula(canvas):
     for j in range(COLUMNAS + 1):
         canvas.create_line(j * TAM_CELDA, 0, j * TAM_CELDA, FILAS * TAM_CELDA)
 def juego():
+    global canvas
+    global partida
+    global frame_tablero
     partida = cargar_partida()#Valor aleatorio del json
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
@@ -310,7 +345,7 @@ def juego():
     canvas = tk.Canvas(frame_tablero, width=ancho_canvas, height=alto_canvas, bg="white", highlightthickness=0)
     canvas.grid(row=1, column=0)
     dibujar_cuadricula(canvas)
-    dibujar_claves_y_casillas(canvas, partida["claves"],frame_tablero)
+    dibujar_claves_y_casillas(canvas, partida["claves"])
 
     
 
@@ -346,10 +381,8 @@ def juego():
     entry_nom = tk.Entry(frame_contenido, width=25)
     entry_nom.pack(pady=5)
     b = None
-    nom = entry_nom.get()
-    tiemp = entry_reloj.get()
     
-    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink",command=lambda: iniciar_juego(nom,tiemp))
+    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink",command=lambda: iniciar_juego(entry_nom.get(),entry_reloj.get))
     btn_ini.grid(row=2, column=0, pady=5)
     # Números del 1 al 9
     btn1 = tk.Button(frame_contenido, text="1", width=6, height=1)
