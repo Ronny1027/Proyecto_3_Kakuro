@@ -12,7 +12,7 @@ import random
 
 #Cargar las partidas de juego
 partidas_usa = []
-def cargar_partida():
+def cargar_partida(ventana):
     global partidas_usa
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
@@ -21,9 +21,14 @@ def cargar_partida():
     difi = confi["Nivel"]
     partida_dispo = []
     restantes = []
+    exist_part = False
     for partida in partidas:
         if partida["nivel_de_dificultad"]== difi:
             partida_dispo.append(partida)
+            exist_part = True
+    if exist_part== False:
+        messagebox.showerror("ERROR"," NO HAY PARTIDAS PARA ESTE NIVEL")
+        ventana.destroy()
     if len(partidas_usa) >= len(partida_dispo):
         partidas_usa = []
     for p in partida_dispo:
@@ -143,8 +148,32 @@ casi_selec = None
 pila_desh = []
 pila_reha= []
 jugadas = {}
+juego_ini = False
+borrar_act = False
+#Funciones de juego(no graficas)
+#Iniciar reloj.
+def ini_relo():
+    global tiemp_relo
+    global tipo_relo
+    global id_relo
+def iniciar_juego(nom,tiemp,boton):
+    global juego_ini
+    if nom =="":
+        messagebox.showerror("Error", "Digite su nombre")
+        return
+    if len(nom)>40 :
+        messagebox.showerror("Error", "Digite un nombre valido")
+        return
+    juego_ini = True
+    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
+    boton.config(state="disabled")
+#Función para poder borrar el contenido de una casilla.
+def borrar_casi():
+    global borrar_act
+    borrar_act = True
 #Función para deshacer una jugada
 def deshacer_jugada():
+    global jugadas
     if pila_desh == []:
         messagebox.showerror("Error", "No hay jugadas para deshacer.")
         return
@@ -165,9 +194,9 @@ def deshacer_jugada():
             del jugadas[(fila, col)]
     entry.config(state="readonly")
     pila_reha.append((fila, col, valo_ante, valor_act))#El orden de los valores cambia
-
 #Función para rehacer una jugada.
 def rehacer_jugada():
+    global jugadas
     if pila_reha == []:
         messagebox.showerror("Error", "No hay jugadas para rehacer.")
         return
@@ -188,37 +217,131 @@ def rehacer_jugada():
             del jugadas[(fila, col)]
     entry.config(state="readonly")
     pila_desh.append((fila, col, valo_ante, valor_nuev))
-                 
+#Función para borrar el juego.
+def borrar_jueg():
+    global juego_ini
+    global jugadas
+    if juego_ini == False:
+        messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
+        return
+    verifi = messagebox.askquestion("Verificación", "¿ESTÁ SEGURO DE BORRAR EL JUEGO (SI/NO)?")
+    if verifi == "yes":
+        #Se reinician las variables.
+        jugadas.clear()
+        pila_desh.clear()
+        pila_reha.clear()
+        #Proceso de borrar todas las casillas.
+        for entry in entrada_casillas.values():
+            entry.destroy()
+        entrada_casillas.clear()
+
+        #Se vuelve a marcar el juego como no iniciado.
+        juego_ini = False
+#Función para terminar el juego.
+def termi_jueg(ventana):
+    global juego_ini
+    if juego_ini == False:
+        messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
+        return
+    verifi2 = messagebox.askquestion("Verificación", "¿ESTÁ SEGURO DE TERMINAR EL JUEGO (SI/NO)?")
+    if verifi2 == "yes":
+        ventana.destroy()
+        juego()
+#Función para guardar la info de una partida
+def guardar_part(nom,ventana):
+    global partida
+    global juego_ini
+    if juego_ini == False:
+        messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
+        return
+    try:
+        with open("kakuro2025_juego_actual.json", "r") as w:
+            guardadas = json.load(w)
+    except FileNotFoundError:
+        guardadas = {}
+    if nom in guardadas:
+        del guardadas[nom]
+    jugadas_realizadas = {f"{f},{c}": v for (f, c), v in jugadas.items()}
+    guardadas[nom] = {
+        "partida": partida["partida"],
+        "nivel": partida["nivel_de_dificultad"],
+        "jugadas": jugadas_realizadas
+    }
+    # Guardar el archivo actualizado
+    with open("kakuro2025_juego_actual.json", "w") as w:
+        json.dump(guardadas, w, indent=4)
+    #Se consulta si se desea seguir jugando
+    seguir = messagebox.askquestion("¿Desea continuar jugando?", "¿Va a continuar jugando?")
+    if seguir == "no":
+        ventana.destroy()
+#Función para cargar la partida
+def cargar_part(nom):
+    global jugadas
+    global partida
+    global juego_ini
+    if juego_ini == False:
+        messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
+        return
+    with open("kakuro2025_juego_actual.json", "r") as w:
+            guardadas = json.load(w)
+    with open("kakuro2025_configuración","r") as r:
+        confi = json.load(r)
+    #Se sacan las variables necesarias
+    num_part = partida["partida"]
+    dificul = confi["Nivel"]
+    if nom not in guardadas:
+        messagebox.showerror("Error","No hay ninguna partida guardada")
+        return
+    info = guardadas[nom]#Se obtiene la partida en caso de que si este.
+    if info["nivel"]!=dificul or info["partida"]!=num_part:#Se termina de validar
+        messagebox.showerror("Error","No hay ninguna partida guardada")
+        return
+    jugadas_guar = info["jugadas"]
+    for clave, valor in jugadas_guar.items():
+        try:
+            f, c = map(int, clave.split(","))
+            entry = entrada_casillas.get((f, c))
+            if entry:
+                entry.config(state="normal")
+                entry.delete(0, tk.END)
+                entry.insert(0, valor)
+                entry.config(state="readonly")
+                jugadas[(f, c)] = valor
+        except Exception as e:
+            print(f"Error cargando jugada en ({clave}): {e}")
 #Función para quitarle el color verde al boton
 def deseleccionar_botones():
     global boton_act
     if boton_act!= None:
         boton_act.config(bg="SystemButtonFace")
         boton_act = None
-#Función para validar la información de la jugada.
-def es_jugada_valida(fila, col, valor):
-    for (f, c), v in jugadas.items():
-        if f == fila and v == valor:
-            messagebox.showerror("Error", f"Ya existe el número {valor} en la fila")
-            return False
-        if c == col and v == valor:
-            messagebox.showerror("Error", f"Ya existe el número {valor} en la columna")
-            return False
-    return True
-
+#Función para controlar el fin del juego
+def fin_jueg():
+    for entry in entrada_casillas.values():
+        if entry.get() == "":
+            return  # Si encuentra una vacía, no hace nada
+    #Si el ciclo se cumple y termina llega aqui.
+    messagebox.showinfo("¡Felicidades!", "¡EXCELENTE JUGADOR!\nTERMINÓ EL JUEGO CON ÉXITO.")
 #Función para poder colocar el número con las coordenadas
 def colocar_numero(entry_widget, fila, col):
     global numero_selec
+    global borrar_act
     global casi_selec
+    global jugadas
+    if borrar_act== True: #En caso de que la función borrar este activa
+        entry_widget.config(state="normal")
+        entry_widget.delete(0, tk.END)
+        entry_widget.config(state="readonly")
+        if (fila, col) in jugadas:
+            del jugadas[(fila, col)]
+        borrar_act = False#se vuelve a desactivar la información
+        return
     if numero_selec is None:
         messagebox.showerror("Error", "Debe seleccionar un número")
         return
     cont_actual = entry_widget.get()
     if cont_actual != "":
         messagebox.showerror("Error", "Ya hay un número en esa casilla")
-        return
-    #Validación de jugada valida
-    if not es_jugada_valida(fila, col, numero_selec):
         return
     valo_ante = entry_widget.get()
     pila_desh.append((fila, col, valo_ante, numero_selec))
@@ -232,6 +355,7 @@ def colocar_numero(entry_widget, fila, col):
     casi_selec = entry_widget
     deseleccionar_botones()  #Quitar el color despues del proceso
     numero_selec = None#Se reinicia el valor
+    fin_jueg()
 #Función para poner el boton en verde.
 def seleccionar_numero(n, boton):
     global numero_selec
@@ -241,16 +365,6 @@ def seleccionar_numero(n, boton):
         boton_act.config(bg="SystemButtonFace")  # Reinicar boton anterior
     boton_act = boton#El boton pasa a tener un nuevo valor
     boton_act.config(bg="green")
-#Función para hacer el proceso de borrar el número de una casilla.
-def borrar_casi():
-    global casi_selec
-    if casi_selec == None:
-        messagebox.showerror("Error", "Debe seleccionar una casilla")
-        return
-    casi_selec.config(state="normal")#Para poder editar la casilla
-    casi_selec.delete(0, tk.END)
-    casi_selec.config(state="readonly")
-    casi_selec = None#se reinicia el valor
 #Poner los entry en las casillas jugables.
 def crear_casillas_jugables(canvas, claves, frame_tablero):
     jugables = set()
@@ -295,21 +409,6 @@ def dibujar_claves_y_casillas(canvas, claves,):
                     canvas.create_text(x1 + 5, y2 - 5, text=str(tipos["C"]), anchor="sw", fill="white", font=("Arial", 9, "bold"))
                 if "F" in tipos and tipos["F"] != 0:
                     canvas.create_text(x2 - 5, y1 + 5, text=str(tipos["F"]), anchor="ne", fill="white", font=("Arial", 9, "bold"))
-#Funciones de juego(no graficas)
-def ini_relo():
-    global tiemp_relo
-    global tipo_relo
-    global id_relo
-def iniciar_juego(nom,tiemp):
-    if nom =="":
-        messagebox.showerror("Error", "Digite su nombre")
-        return
-    if len(nom)>40 :
-        messagebox.showerror("Error", "Digite un nombre valido")
-        return
-    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
-
-
 #Interfaz grafica del juego
 #Variables para poder hacer la cuadricula
 FILAS = 9
@@ -325,10 +424,11 @@ def juego():
     global canvas
     global partida
     global frame_tablero
-    partida = cargar_partida()#Valor aleatorio del json
+   
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
+    partida = cargar_partida(jueg)#Valor aleatorio del json
     #Frame general para acomodar los frames.
     frame_principal = tk.Frame(jueg)
     frame_principal.pack(padx=10, pady=10)
@@ -382,7 +482,7 @@ def juego():
     entry_nom.pack(pady=5)
     b = None
     
-    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink",command=lambda: iniciar_juego(entry_nom.get(),entry_reloj.get))
+    btn_ini = tk.Button(frame_tablero, text="Iniciar juego", bg="hotpink",command=lambda: iniciar_juego(entry_nom.get(),entry_reloj.get(),btn_ini))
     btn_ini.grid(row=2, column=0, pady=5)
     # Números del 1 al 9
     btn1 = tk.Button(frame_contenido, text="1", width=6, height=1)
@@ -425,16 +525,18 @@ def juego():
     btn_reh = tk.Button(frame_botones, text="Rehacer jugada",width=12, bg="lightblue",command=rehacer_jugada)
     btn_reh.grid(row=1, column=0, pady=5,padx=5)
 
-    btn_borrar = tk.Button(frame_botones, text="Borrar juego",width=12, bg="cyan")
+    btn_borrar = tk.Button(frame_botones, text="Borrar juego",width=12, bg="cyan",command = borrar_jueg)
     btn_borrar.grid(row=0, column=1, pady=5,padx=5)
 
-    btn_term = tk.Button(frame_botones, text="Terminar juego",width=12, bg="blue")
+    btn_term = tk.Button(frame_botones, text="Terminar juego",width=12, bg="blue",command=lambda:termi_jueg(jueg))
     btn_term.grid(row=1, column=1, pady=5,padx=5)
 
-    btn_guardar = tk.Button(frame_botones, text="Guardar juego",width=12, bg="orange")
+    btn_guardar = tk.Button(frame_botones, text="Guardar juego",width=12, bg="orange",
+                            command=lambda: guardar_part(entry_nom.get(),jueg))
     btn_guardar.grid(row=0, column=2, pady=5,padx=5)
 
-    btn_cargar = tk.Button(frame_botones, text="Cargar juego",width=12, bg="sienna")
+    btn_cargar = tk.Button(frame_botones, text="Cargar juego",width=12, bg="sienna",
+                           command=lambda: cargar_part(entry_nom.get()))
     btn_cargar.grid(row=1, column=2, pady=5,padx=5)
 
     btn_record = tk.Button(frame_botones, text="Records",width=12, bg="yellow")
