@@ -150,23 +150,95 @@ pila_reha= []
 jugadas = {}
 juego_ini = False
 borrar_act = False
+relo = ""
+tiempo_tempori = ""
+tiempo_actu = 0
+reloj_act = False
+tempo = ""
 #Funciones de juego(no graficas)
 #Iniciar reloj.
-def ini_relo():
-    global tiemp_relo
-    global tipo_relo
-    global id_relo
+def iniciar_relo():
+    global relo#Evitar la repetición de procesos
+    global tiempo_tempori
+    global tiempo_actu#Necesario para repetir el proceso
+    global reloj_act
+    global tempo
+    #Tipo de reloj
+    #Reloj vacio
+    if juego_ini == False or reloj_act== False:
+        return
+    if relo == "sinrelo":
+        return
+    #Obtener el valor de tiempo_actu
+    #Temporizador
+    if relo == "tempori":
+        tiempo_tempori = entry_reloj.get()  # formato "HH:MM:SS"
+        h, m, s = map(int, tiempo_tempori.split(":"))
+        tiempo_actu = h * 3600 + m * 60 + s
+    #Cronometro
+    if relo == "crono":
+        tiempo_actu = tiempo_actu + 1
+    #Temporizador
+    elif relo == "tempori":
+        tiempo_actu = tiempo_actu - 1
+        if tiempo_actu < 0:
+            mensaje = messagebox.askquestion("Tiempo expirado", "TIEMPO EXPIRADO. ¿DESEA CONTINUAR EL MISMO JUEGO (SI/NO)?")
+            #Cambia el tipo de reloj
+            if mensaje == "yes":
+                relo= "crono"
+                tiempo_actu = 0  
+                tiempo_tempori = tempo
+                h, m, s = map(int, tiempo_tempori.split(":"))
+                tiempo_actu = h * 3600 + m * 60 + s
+                iniciar_relo()
+                return
+            else:
+                jueg.destroy()
+                juego()
+                return
+    #Proceso para mostrar el tiempo en formato (HH:MM:SS)
+    horas = tiempo_actu // 3600
+    minutos = (tiempo_actu % 3600) // 60
+    segundos = tiempo_actu % 60
+    formato = f"{horas:02}:{minutos:02}:{segundos:02}"
+    entry_reloj.config(state="normal")
+    entry_reloj.delete(0, tk.END)
+    entry_reloj.insert(0, formato)
+    entry_reloj.config(state="readonly")
+
+    # La funcion se llama de nuevo cada segundo
+    entry_reloj.after(1000, iniciar_relo)
 def iniciar_juego(nom,tiemp,boton):
     global juego_ini
+    global exist_reloj
+    global relo
+    global reloj_act
+    global tempo
     if nom =="":
         messagebox.showerror("Error", "Digite su nombre")
         return
     if len(nom)>40 :
         messagebox.showerror("Error", "Digite un nombre valido")
         return
-    juego_ini = True
-    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
-    boton.config(state="disabled")
+    #Se configura el reloj.
+    if exist_reloj == True:
+        tiempo_str = tiemp
+        try:
+            h, m, s = map(int, tiempo_str.split(":"))
+            if not (0 <= h <= 2 and 0 <= m < 60 and 0 <= s < 60):#Se valida el rango
+                messagebox.showerror("Error", "Tiempo fuera de rango")
+                return
+        except ValueError:#Se valida que este en el formato esperado
+            messagebox.showerror("Error", "Formato de tiempo inválido. Use HH:MM:SS")
+            return
+    tempo = tiemp
+    juego_ini = True#cambio en la variable
+    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)#Se ponen los entry para jugar
+    
+    if juego_ini == True:
+        boton.config(state="disabled")
+    reloj_act = True
+    iniciar_relo()
 #Función para poder borrar el contenido de una casilla.
 def borrar_casi():
     global borrar_act
@@ -218,12 +290,27 @@ def rehacer_jugada():
     entry.config(state="readonly")
     pila_desh.append((fila, col, valo_ante, valor_nuev))
 #Función para borrar el juego.
-def borrar_jueg():
+def borrar_jueg(boton):
     global juego_ini
     global jugadas
+    global relo
+    global tiempo_actu
+    global tiempo_tempori
+    global entry_reloj
     if juego_ini == False:
         messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
         return
+    with open("kakuro2025_configuración","r") as w:
+        confi = json.load(w)
+    relo = confi["Reloj"]
+    tempo = confi["Temporizador"]
+    valo_relo = ""
+    if relo == "tempori":
+        if tempo != "No hay":
+            valo_relo = tempo
+            tiempo_tempori = tempo#Se asigna el tiempo para usarlo en otras funciones.
+    if relo == "crono":
+        valo_relo = "00:00:00"
     verifi = messagebox.askquestion("Verificación", "¿ESTÁ SEGURO DE BORRAR EL JUEGO (SI/NO)?")
     if verifi == "yes":
         #Se reinician las variables.
@@ -236,6 +323,13 @@ def borrar_jueg():
         entrada_casillas.clear()
 
         #Se vuelve a marcar el juego como no iniciado.
+        boton.config(state="normal")
+        tiempo_actu = 0
+        if entry_reloj != None:
+            entry_reloj.config(state="normal")
+            entry_reloj.delete(0, tk.END)
+            entry_reloj.insert(0, valo_relo)
+            entry_reloj.config(state="readonly")
         juego_ini = False
 #Función para terminar el juego.
 def termi_jueg(ventana):
@@ -246,6 +340,7 @@ def termi_jueg(ventana):
     verifi2 = messagebox.askquestion("Verificación", "¿ESTÁ SEGURO DE TERMINAR EL JUEGO (SI/NO)?")
     if verifi2 == "yes":
         ventana.destroy()
+        juego_ini = False
         juego()
 #Función para guardar la info de una partida
 def guardar_part(nom,ventana):
@@ -271,8 +366,9 @@ def guardar_part(nom,ventana):
     with open("kakuro2025_juego_actual.json", "w") as w:
         json.dump(guardadas, w, indent=4)
     #Se consulta si se desea seguir jugando
-    seguir = messagebox.askquestion("¿Desea continuar jugando?", "¿Va a continuar jugando?")
+    seguir = messagebox.askquestion("Atención","¿VA A CONTINUAR JUGANDO (SI/NO)?")
     if seguir == "no":
+        juego_ini = False
         ventana.destroy()
 #Función para cargar la partida
 def cargar_part(nom):
@@ -379,7 +475,7 @@ def crear_casillas_jugables(canvas, claves, frame_tablero):
                 entry.bind("<Button-1>", lambda event, fila=fila, col=col: colocar_numero(event.widget, fila, col))
                 entrada_casillas[(fila, col)] = entry
 #Dibujar la cuadricula
-def dibujar_claves_y_casillas(canvas, claves,):
+def dibujar_claves_y_casillas(canvas, claves):
     casillas = {}
     usadas = set()
     for clave in claves:
@@ -424,7 +520,12 @@ def juego():
     global canvas
     global partida
     global frame_tablero
-   
+    global exist_reloj
+    global relo
+    global entry_reloj
+    global jueg
+    global tiempo_tempori
+    global tempo
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -446,27 +547,29 @@ def juego():
     canvas.grid(row=1, column=0)
     dibujar_cuadricula(canvas)
     dibujar_claves_y_casillas(canvas, partida["claves"])
-
-    
-
-    lbl_reloj = tk.Label(frame_tablero, text="Reloj:", font=("Arial", 10))
-    lbl_reloj.grid(row=3, column=0, pady=(10, 0))
-
-    entry_reloj = tk.Entry(frame_tablero, width=10, justify="center", font=("Courier", 12))
-    entry_reloj.grid(row=4, column=0, pady=(0, 10))
-
     with open("kakuro2025_configuración","r") as w:
         confi = json.load(w)
+    exist_reloj = False
     dificul = confi["Nivel"]
     relo = confi["Reloj"]
     tempo = confi["Temporizador"]
+    valo_relo = ""
     if relo == "tempori":
+        exist_reloj = True
         if tempo != "No hay":
-            entry_reloj.insert(0,tempo)
+            valo_relo = tempo
+            tiempo_tempori = tempo#Se asigna el tiempo para usarlo en otras funciones.
     if relo == "crono":
-        entry_reloj.insert(0, "00:00:00")
+        valo_relo = "00:00:00"
+        exist_reloj = True
+    #Se valida que el reloj este activo
+    if exist_reloj== True:
+        lbl_reloj = tk.Label(frame_tablero, text="Reloj:", font=("Arial", 10))
+        lbl_reloj.grid(row=3, column=0, pady=(10, 0))
 
-    
+        entry_reloj = tk.Entry(frame_tablero, width=10, justify="center", font=("Courier", 12))
+        entry_reloj.grid(row=4, column=0, pady=(0, 10))
+        entry_reloj.insert(0, valo_relo)
     lbl_nivel = tk.Label(frame_tablero, text=f"Nivel: {dificul}", font=("Arial", 11, "italic"))
     lbl_nivel.grid(row=5, column=0, pady=(5, 0))
     #Frame para agrupar las opciones de la derecha(nombre,numeros y botones)
@@ -525,7 +628,7 @@ def juego():
     btn_reh = tk.Button(frame_botones, text="Rehacer jugada",width=12, bg="lightblue",command=rehacer_jugada)
     btn_reh.grid(row=1, column=0, pady=5,padx=5)
 
-    btn_borrar = tk.Button(frame_botones, text="Borrar juego",width=12, bg="cyan",command = borrar_jueg)
+    btn_borrar = tk.Button(frame_botones, text="Borrar juego",width=12, bg="cyan",command=lambda:borrar_jueg(btn_ini))
     btn_borrar.grid(row=0, column=1, pady=5,padx=5)
 
     btn_term = tk.Button(frame_botones, text="Terminar juego",width=12, bg="blue",command=lambda:termi_jueg(jueg))
