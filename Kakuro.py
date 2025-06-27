@@ -12,8 +12,10 @@ import random
 
 #Cargar las partidas de juego
 partidas_usa = []
-def cargar_partida(ventana):
+def cargar_partida_de_juego():
     global partidas_usa
+    global jueg
+    global restantes
     with open("kakuro2025_partidas.json","r") as w:
         partidas = json.load(w)
     with open("kakuro2025_configuración","r") as r:
@@ -28,7 +30,7 @@ def cargar_partida(ventana):
             exist_part = True
     if exist_part== False:
         messagebox.showerror("ERROR"," NO HAY PARTIDAS PARA ESTE NIVEL")
-        ventana.destroy()
+        jueg.destroy()
     if len(partidas_usa) >= len(partida_dispo):
         partidas_usa = []
     for p in partida_dispo:
@@ -173,8 +175,11 @@ def iniciar_relo():
     #Temporizador
     if relo == "tempori":
         tiempo_tempori = entry_reloj.get()  # formato "HH:MM:SS"
-        h, m, s = map(int, tiempo_tempori.split(":"))
-        tiempo_actu = h * 3600 + m * 60 + s
+        tiempo_normal = tiempo_tempori.split(":")
+        h1 = int(tiempo_normal[0])
+        m1 = int(tiempo_normal[1])
+        s1 = int(tiempo_normal[2])
+        tiempo_actu = h1 * 3600 + m1 * 60 + s1
     #Cronometro
     if relo == "crono":
         tiempo_actu = tiempo_actu + 1
@@ -188,8 +193,11 @@ def iniciar_relo():
                 relo= "crono"
                 tiempo_actu = 0  
                 tiempo_tempori = tempo
-                h, m, s = map(int, tiempo_tempori.split(":"))
-                tiempo_actu = h * 3600 + m * 60 + s
+                tiempo_normal2 = tiempo_tempori.split(":")
+                h2 = int(tiempo_normal2[0])
+                m2 = int(tiempo_normal2[1])
+                s2 = int(tiempo_normal2[2])
+                tiempo_actu = h2* 3600 + m2 * 60 + s2
                 iniciar_relo()
                 return
             else:
@@ -205,7 +213,6 @@ def iniciar_relo():
     entry_reloj.delete(0, tk.END)
     entry_reloj.insert(0, formato)
     entry_reloj.config(state="readonly")
-
     # La funcion se llama de nuevo cada segundo
     entry_reloj.after(1000, iniciar_relo)
 def iniciar_juego(nom,tiemp,boton):
@@ -214,6 +221,8 @@ def iniciar_juego(nom,tiemp,boton):
     global relo
     global reloj_act
     global tempo
+    global nombre
+    nombre = nom
     if nom =="":
         messagebox.showerror("Error", "Digite su nombre")
         return
@@ -334,6 +343,9 @@ def borrar_jueg(boton):
 #Función para terminar el juego.
 def termi_jueg(ventana):
     global juego_ini
+    global tiempo_actu
+    global relo
+    global tempo
     if juego_ini == False:
         messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
         return
@@ -342,6 +354,15 @@ def termi_jueg(ventana):
         ventana.destroy()
         juego_ini = False
         juego()
+    if relo == "tempori":
+        tiempo_tempori = tempo  # formato "HH:MM:SS"
+        tiempo_normal = tiempo_tempori.split(":")
+        h1 = int(tiempo_normal[0])
+        m1 = int(tiempo_normal[1])
+        s1 = int(tiempo_normal[2])
+        tiempo_actu = h1 * 3600 + m1 * 60 + s1
+    if relo == "crono":
+        tiempo_actu = 0
 #Función para guardar la info de una partida
 def guardar_part(nom,ventana):
     global partida
@@ -413,11 +434,220 @@ def deseleccionar_botones():
         boton_act = None
 #Función para controlar el fin del juego
 def fin_jueg():
-    for entry in entrada_casillas.values():
-        if entry.get() == "":
-            return  # Si encuentra una vacía, no hace nada
+    #Variables necesarias para guardar los datos
+    global tempo
+    global entry_reloj
+    global relo
+    global nombre
+    global dificul
+    global juego_ini
+    global reloj_act
+    global tiempo_actu
+    global tiempo_tempori
+    for entry in list(entrada_casillas.values()):
+        try:
+            if entry.get() == "":
+                return#Si se encuentra una vacia se elimina el error.
+        except tk.TclError:
+            continue#Para evitar errores
+    reloj_act = False
     #Si el ciclo se cumple y termina llega aqui.
     messagebox.showinfo("¡Felicidades!", "¡EXCELENTE JUGADOR!\nTERMINÓ EL JUEGO CON ÉXITO.")
+    tiempo_alcan = entry_reloj.get()
+    if relo != "sinrelo":
+        if relo == "tempori":
+            #Se pasa a número normal el tiempo inicial.
+            tiempo_norma1 = tempo.split(":")
+            h1 = int(tiempo_norma1[0])
+            m1 = int(tiempo_norma1[1])
+            s1 = int(tiempo_norma1[2])
+            total_tempo = h1 * 3600 + m1 * 60 + s1
+            #Se pasa a número normal el tiempo alcanzado.
+            tiempo_norma2 = tiempo_alcan.split(":")
+            h2 = int(tiempo_norma2[0])
+            m2= int(tiempo_norma2[1])
+            s2 = int(tiempo_norma2[2])
+            tiempo_restante = h2 * 3600 + m2 * 60 + s2
+            # Calcular el tiempo total.
+            tiempo_usado = total_tempo - tiempo_restante
+            horas = tiempo_usado // 3600
+            minutos = (tiempo_usado % 3600) // 60
+            segundos = tiempo_usado % 60
+            tiempo_alcan = f"{horas:02}:{minutos:02}:{segundos:02}"
+    try:
+        with open("kakuro2025_récords.json", "r") as f:
+            records = json.load(f)
+    except FileNotFoundError:
+        records = {}
+    records[nombre] = {
+        "tiempo": tiempo_alcan,
+        "dificultad": dificul
+    }
+
+    with open("kakuro2025_récords.json", "w") as f:
+        json.dump(records, f, indent=4)
+    jugadas.clear()
+    pila_desh.clear()
+    pila_reha.clear()
+    tiempo_actu = 0
+    tiempo_tempori = ""
+    juego_ini = False
+
+    for entry in list(entrada_casillas.values()):
+        try:
+            entry.destroy()
+        except:
+            pass
+    entrada_casillas.clear()
+
+    # Limpia el reloj si existe
+    try:
+        entry_reloj.config(state="normal")
+        entry_reloj.delete(0, tk.END)
+        entry_reloj.insert(tempo, tk.END)
+        entry_reloj.config(state="readonly")
+    except:
+        pass
+
+    # Cargar una nueva partida y preparar el juego nuevamente
+    nueva_partida = cargar_partida_de_juego()
+    global partida
+    partida = nueva_partida
+    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
+
+    btn_ini.config(state="normal")
+
+    pass
+#Función para mostrar los records
+def records():
+    global reloj_act
+    global nombre
+    reloj_act = False#El reloj para
+    reco = tk.Toplevel(jueg)
+    reco.title("Jugar Kakuro")
+    reco.geometry("500x400")
+
+    frame_reco = tk.Frame(reco)
+    tk.Label(frame_reco, text="Seleccione la información", anchor='w').pack(padx=20)
+    tk.Label(frame_reco, text="Nivel", anchor='w').pack(padx=20)
+    frame_reco.pack(pady=10)
+    reco_var = tk.StringVar(value="todos")  # valor por default
+    tk.Radiobutton(frame_reco, text="Todos los niveles", variable=reco_var, value="todos").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_reco, text="Nivel fácil", variable=reco_var, value="FÁCIL").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_reco, text="Nivel medio", variable=reco_var, value="MEDIO").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_reco, text="Nivel difícil", variable=reco_var, value="DIFÍCIL").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_reco, text="Nivel experto", variable=reco_var, value="EXPERTO").pack(anchor="w", padx=20)
+    frame_juga = tk.Frame(reco)
+    frame_juga.pack(pady=10)
+    tk.Label(frame_juga, text="Jugadores", anchor='w').pack(padx=20)
+    juga_var = tk.StringVar(value="Todos")  # valor por default
+    tk.Radiobutton(frame_juga, text="Todos los jugadores", variable=juga_var, value="Todos").pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_juga, text="Yo", variable=juga_var, value="yo").pack(anchor="w", padx=20)
+    def mostrar_records():
+        global nombre
+        try:
+            with open("kakuro2025_récords.json", "r") as f:
+                records = json.load(f)
+        except FileNotFoundError:
+            messagebox.showerror("Error", "No hay récords guardados aún.")
+            return
+
+        nivel_selec = reco_var.get()
+        juga_selec = juga_var.get()
+
+        # Agrupar por nivel
+        niveles = ["FÁCIL", "MEDIO", "DIFÍCIL", "EXPERTO"]
+        if nivel_selec == "todos":
+            niveles_a_mostrar = niveles
+        else:
+            niveles_a_mostrar = [nivel_selec]  # <- convertimos a lista para iterar
+
+        vent_result = tk.Toplevel()
+        vent_result.title("Récords por nivel")
+        vent_result.geometry("500x500")
+        tk.Label(vent_result, text="TOP RÉCORDS", font=("Arial", 14, "bold")).pack(pady=10)
+
+        for nivel_actual in niveles_a_mostrar:
+            resultados = []
+            for jugador, datos in records.items():
+                nivel = datos.get("dificultad", "")
+                tiempo = datos.get("tiempo", "")
+
+                if nivel != nivel_actual:
+                    continue
+                if juga_selec == "yo" and jugador != nombre:
+                    continue
+
+                # Convertir tiempo a segundos para ordenar
+                h, m, s = map(int, tiempo.split(":"))
+                total_segundos = h * 3600 + m * 60 + s
+                resultados.append((jugador, tiempo, total_segundos))
+
+            if not resultados:
+                continue
+
+            # Ordenar por tiempo
+            resultados.sort(key=lambda x: x[2])
+
+            # Mostrar encabezado por nivel
+            tk.Label(vent_result, text=f"Nivel: {nivel_actual}", font=("Arial", 12, "bold")).pack()
+
+            if juga_selec == "Todos":
+                for idx, (jugador, tiempo, _) in enumerate(resultados, start=1):
+                    linea = f"{idx}. {jugador} | {tiempo}"
+                    tk.Label(vent_result, text=linea).pack(anchor="w", padx=40)
+            elif juga_selec == "yo":
+                # Primero armamos la lista completa de ese nivel sin filtrar
+                resultados_completos = []
+                for jugador, datos in records.items():
+                        nivel = datos.get("dificultad", "")
+                        tiempo = datos.get("tiempo", "")
+
+                        if nivel != nivel_actual:
+                            continue
+
+                        h, m, s = map(int, tiempo.split(":"))
+                        total_segundos = h * 3600 + m * 60 + s
+                        resultados_completos.append((jugador, tiempo, total_segundos))
+
+                if not resultados_completos:
+                    continue
+
+                resultados_completos.sort(key=lambda x: x[2])
+
+                encontrado = False
+                for idx, (jugador, tiempo, _) in enumerate(resultados_completos, start=1):
+                    if jugador == nombre:
+                        linea = f"{idx}. {jugador} | {tiempo}"
+                        tk.Label(vent_result, text=linea, font=("Arial", 10, "bold"), fg="blue").pack(anchor="w", padx=40)
+                        encontrado = True
+                        break
+
+                if not encontrado:
+                    tk.Label(vent_result, text="No tiene récords en este nivel.", fg="red").pack(anchor="w", padx=40)
+                    
+
+                tk.Label(vent_result, text="").pack()  # espacio entre niveles
+            def cerrar_todo():
+                global reloj_act
+                reloj_act = True
+                iniciar_relo()
+                vent_result.destroy()
+            vent_result.protocol("WM_DELETE_WINDOW", cerrar_todo)
+            
+   
+
+    frame_btons= tk.Frame(reco)
+    frame_btons.pack(pady=10)
+    btn_acept = tk.Button(frame_btons,text = "Aceptar",command=lambda: [mostrar_records(), reco.destroy()])
+    btn_acept.grid(row=0, column=0,padx=5)
+    btn_cancel = tk.Button(frame_btons,text = "Volver", command = reco.destroy)
+    btn_cancel.grid(row=0, column=1,padx=5)
+    
+            
+            
+    
+        
 #Función para poder colocar el número con las coordenadas
 def colocar_numero(entry_widget, fila, col):
     global numero_selec
@@ -526,10 +756,12 @@ def juego():
     global jueg
     global tiempo_tempori
     global tempo
+    global dificul
+    global btn_ini
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
-    partida = cargar_partida(jueg)#Valor aleatorio del json
+    partida = cargar_partida_de_juego()#Valor aleatorio del json
     #Frame general para acomodar los frames.
     frame_principal = tk.Frame(jueg)
     frame_principal.pack(padx=10, pady=10)
@@ -642,7 +874,7 @@ def juego():
                            command=lambda: cargar_part(entry_nom.get()))
     btn_cargar.grid(row=1, column=2, pady=5,padx=5)
 
-    btn_record = tk.Button(frame_botones, text="Records",width=12, bg="yellow")
+    btn_record = tk.Button(frame_botones, text="Records",width=12, bg="yellow",command= records)
     btn_record.grid(row=1, column=3, pady=5,padx=5)
 
     btn_cancel = tk.Button(frame_botones,text = "Volver",command= jueg.destroy,width=12, bg="red")
