@@ -160,14 +160,14 @@
             {
                 "tipo_de_clave": "F",
                 "fila": 2,
-                "columna": 8,
+                "columna": 7,
                 "clave": 8,
                 "casillas": 2
             },
             {
                 "tipo_de_clave": "C",
                 "fila": 2,
-                "columna": 8,
+                "columna": 7,
                 "clave": 0,
                 "casillas": 0
             },
@@ -202,14 +202,14 @@
             {
                 "tipo_de_clave": "F",
                 "fila": 3,
-                "columna": 8,
+                "columna": 7,
                 "clave": 12,
                 "casillas": 2
             },
             {
                 "tipo_de_clave": "C",
                 "fila": 3,
-                "columna": 8,
+                "columna": 7,
                 "clave": 14,
                 "casillas": 4
             },

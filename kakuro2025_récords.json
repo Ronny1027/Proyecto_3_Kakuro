@@ -1,22 +1,44 @@
 {
-    "ronny": {
-        "tiempo": "00:01:34",
-        "dificultad": "DIF\u00cdCIL"
+    "ejemplo1": {
+        "F\u00c1CIL": {
+            "tiempo": "00:02:22"
+        },
+        "MEDIO": {
+            "tiempo": "00:01:15"
+        },
+        "EXPERTO": {
+            "tiempo": "00:01:06"
+        },
+        "DIF\u00cdCIL": {
+            "tiempo": "00:01:13"
+        }
     },
-    "Ronny2": {
-        "tiempo": "00:01:18",
-        "dificultad": "F\u00c1CIL"
+    "ejemplo2": {
+        "MEDIO": {
+            "tiempo": "00:01:09"
+        },
+        "F\u00c1CIL": {
+            "tiempo": "00:01:32"
+        },
+        "EXPERTO": {
+            "tiempo": "00:01:11"
+        },
+        "DIF\u00cdCIL": {
+            "tiempo": "00:01:16"
+        }
     },
-    "Ronn3": {
-        "tiempo": "00:02:59",
-        "dificultad": "F\u00c1CIL"
-    },
-    "Ronny8": {
-        "tiempo": "00:01:18",
-        "dificultad": "F\u00c1CIL"
-    },
-    "Ronny9": {
-        "tiempo": "00:01:04",
-        "dificultad": "F\u00c1CIL"
+    "ejemplo3": {
+        "MEDIO": {
+            "tiempo": "00:01:11"
+        },
+        "F\u00c1CIL": {
+            "tiempo": "00:01:07"
+        },
+        "EXPERTO": {
+            "tiempo": "00:01:15"
+        },
+        "DIF\u00cdCIL": {
+            "tiempo": "00:01:04"
+        }
     }
 }

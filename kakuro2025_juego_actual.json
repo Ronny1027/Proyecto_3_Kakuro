@@ -14,11 +14,6 @@
             "2,8": 2
         }
     },
-    "Ronny": {
-        "partida": 2,
-        "nivel": "F\u00c1CIL",
-        "jugadas": {}
-    },
     "RONNY": {
         "partida": 1,
         "nivel": "DIF\u00cdCIL",
@@ -48,6 +43,24 @@
             "3,9": 4,
             "4,8": 5,
             "4,9": 5
+        }
+    },
+    "Ronny0": {
+        "partida": 1,
+        "nivel": "F\u00c1CIL",
+        "jugadas": {
+            "2,2": 5,
+            "5,7": 3,
+            "7,7": 8,
+            "7,8": 7,
+            "7,9": 5
+        }
+    },
+    "Ejemplo9": {
+        "partida": 3,
+        "nivel": "DIF\u00cdCIL",
+        "jugadas": {
+            "4,8": 6
         }
     }
 }

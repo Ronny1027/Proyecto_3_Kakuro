@@ -9,7 +9,10 @@ from tkinter import messagebox
 import json
 #Para seleccionar partida aleatoria
 import random
-
+#Para mostrar el PDF
+import os
+import subprocess
+import re
 #Cargar las partidas de juego
 partidas_usa = []
 def cargar_partida_de_juego():
@@ -157,6 +160,7 @@ tiempo_tempori = ""
 tiempo_actu = 0
 reloj_act = False
 tempo = ""
+part_carg = False
 #Funciones de juego(no graficas)
 #Iniciar reloj.
 def iniciar_relo():
@@ -222,6 +226,7 @@ def iniciar_juego(nom,tiemp,boton):
     global reloj_act
     global tempo
     global nombre
+    global part_carg
     nombre = nom
     if nom =="":
         messagebox.showerror("Error", "Digite su nombre")
@@ -242,8 +247,8 @@ def iniciar_juego(nom,tiemp,boton):
             return
     tempo = tiemp
     juego_ini = True#cambio en la variable
-    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)#Se ponen los entry para jugar
-    
+    if part_carg == False:
+        crear_casillas_jugables(canvas, partida["claves"], frame_tablero)#Se ponen los entry
     if juego_ini == True:
         boton.config(state="disabled")
     reloj_act = True
@@ -396,8 +401,11 @@ def cargar_part(nom):
     global jugadas
     global partida
     global juego_ini
-    if juego_ini == False:
-        messagebox.showerror("Error","NO SE HA INICIADO EL JUEGO.")
+    global part_carg
+    global entrada_casillas
+    part_carg = True #Se guarda que la variable
+    if juego_ini == True:
+        messagebox.showerror("Error","YA SE HA INICIADO UN JUEGO")
         return
     with open("kakuro2025_juego_actual.json", "r") as w:
             guardadas = json.load(w)
@@ -413,6 +421,7 @@ def cargar_part(nom):
     if info["nivel"]!=dificul or info["partida"]!=num_part:#Se termina de validar
         messagebox.showerror("Error","No hay ninguna partida guardada")
         return
+    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
     jugadas_guar = info["jugadas"]
     for clave, valor in jugadas_guar.items():
         try:
@@ -444,6 +453,8 @@ def fin_jueg():
     global reloj_act
     global tiempo_actu
     global tiempo_tempori
+    global part_carg
+    global entry_nom
     for entry in list(entrada_casillas.values()):
         try:
             if entry.get() == "":
@@ -479,49 +490,59 @@ def fin_jueg():
             records = json.load(f)
     except FileNotFoundError:
         records = {}
-    records[nombre] = {
-        "tiempo": tiempo_alcan,
-        "dificultad": dificul
+
+    if nombre not in records:
+        records[nombre] = {}
+
+    # Actualiza o agrega el récord de la dificultad correspondiente
+    records[nombre][dificul] = {
+        "tiempo": tiempo_alcan
     }
 
     with open("kakuro2025_récords.json", "w") as f:
         json.dump(records, f, indent=4)
+
+    with open("kakuro2025_récords.json", "w") as f:
+        json.dump(records, f, indent=4)
+
+    #Se borran todas las listas y diccionarios
     jugadas.clear()
     pila_desh.clear()
     pila_reha.clear()
     tiempo_actu = 0
     tiempo_tempori = ""
     juego_ini = False
-
+    try:
+        with open("kakuro2025_juego_actual.json", "r") as f:
+            guardadas = json.load(f)
+        if nombre in guardadas:
+            del guardadas[nombre]
+        with open("kakuro2025_juego_actual.json", "w") as f:
+            json.dump(guardadas, f, indent=4)
+    except:
+        pass
     for entry in list(entrada_casillas.values()):
         try:
             entry.destroy()
         except:
             pass
     entrada_casillas.clear()
-
-    # Limpia el reloj si existe
-    try:
-        entry_reloj.config(state="normal")
-        entry_reloj.delete(0, tk.END)
-        entry_reloj.insert(tempo, tk.END)
-        entry_reloj.config(state="readonly")
-    except:
-        pass
-
-    # Cargar una nueva partida y preparar el juego nuevamente
-    nueva_partida = cargar_partida_de_juego()
-    global partida
-    partida = nueva_partida
-    crear_casillas_jugables(canvas, partida["claves"], frame_tablero)
-
+    #Se muestra el nuevo juego
+    jueg.destroy()
+    juego_ini = False
+    juego()
+    entry_nom.insert(0, nombre)
     btn_ini.config(state="normal")
 
     pass
 #Función para mostrar los records
-def records():
+def cerrar_todo(ventana):
+                global reloj_act
+                reloj_act = True
+                iniciar_relo()
+                ventana.destroy()
+def records(nombre):
     global reloj_act
-    global nombre
     reloj_act = False#El reloj para
     reco = tk.Toplevel(jueg)
     reco.title("Jugar Kakuro")
@@ -543,8 +564,8 @@ def records():
     juga_var = tk.StringVar(value="Todos")  # valor por default
     tk.Radiobutton(frame_juga, text="Todos los jugadores", variable=juga_var, value="Todos").pack(anchor="w", padx=20)
     tk.Radiobutton(frame_juga, text="Yo", variable=juga_var, value="yo").pack(anchor="w", padx=20)
-    def mostrar_records():
-        global nombre
+    def mostrar_records(nombre):
+        reco.destroy()
         try:
             with open("kakuro2025_récords.json", "r") as f:
                 records = json.load(f)
@@ -555,12 +576,11 @@ def records():
         nivel_selec = reco_var.get()
         juga_selec = juga_var.get()
 
-        # Agrupar por nivel
         niveles = ["FÁCIL", "MEDIO", "DIFÍCIL", "EXPERTO"]
         if nivel_selec == "todos":
             niveles_a_mostrar = niveles
         else:
-            niveles_a_mostrar = [nivel_selec]  # <- convertimos a lista para iterar
+            niveles_a_mostrar = [nivel_selec]
 
         vent_result = tk.Toplevel()
         vent_result.title("Récords por nivel")
@@ -569,16 +589,13 @@ def records():
 
         for nivel_actual in niveles_a_mostrar:
             resultados = []
-            for jugador, datos in records.items():
-                nivel = datos.get("dificultad", "")
-                tiempo = datos.get("tiempo", "")
 
-                if nivel != nivel_actual:
-                    continue
-                if juga_selec == "yo" and jugador != nombre:
+            # Construir lista completa de todos los jugadores que tienen récord en ese nivel
+            for jugador, dificultades in records.items():
+                if nivel_actual not in dificultades:
                     continue
 
-                # Convertir tiempo a segundos para ordenar
+                tiempo = dificultades[nivel_actual]["tiempo"]
                 h, m, s = map(int, tiempo.split(":"))
                 total_segundos = h * 3600 + m * 60 + s
                 resultados.append((jugador, tiempo, total_segundos))
@@ -586,37 +603,20 @@ def records():
             if not resultados:
                 continue
 
-            # Ordenar por tiempo
+            # Ordenar todos los resultados por tiempo
             resultados.sort(key=lambda x: x[2])
 
-            # Mostrar encabezado por nivel
             tk.Label(vent_result, text=f"Nivel: {nivel_actual}", font=("Arial", 12, "bold")).pack()
 
             if juga_selec == "Todos":
                 for idx, (jugador, tiempo, _) in enumerate(resultados, start=1):
                     linea = f"{idx}. {jugador} | {tiempo}"
                     tk.Label(vent_result, text=linea).pack(anchor="w", padx=40)
+
             elif juga_selec == "yo":
-                # Primero armamos la lista completa de ese nivel sin filtrar
-                resultados_completos = []
-                for jugador, datos in records.items():
-                        nivel = datos.get("dificultad", "")
-                        tiempo = datos.get("tiempo", "")
-
-                        if nivel != nivel_actual:
-                            continue
-
-                        h, m, s = map(int, tiempo.split(":"))
-                        total_segundos = h * 3600 + m * 60 + s
-                        resultados_completos.append((jugador, tiempo, total_segundos))
-
-                if not resultados_completos:
-                    continue
-
-                resultados_completos.sort(key=lambda x: x[2])
-
+                # Buscar la posición real del jugador en la lista completa
                 encontrado = False
-                for idx, (jugador, tiempo, _) in enumerate(resultados_completos, start=1):
+                for idx, (jugador, tiempo, _) in enumerate(resultados, start=1):
                     if jugador == nombre:
                         linea = f"{idx}. {jugador} | {tiempo}"
                         tk.Label(vent_result, text=linea, font=("Arial", 10, "bold"), fg="blue").pack(anchor="w", padx=40)
@@ -625,23 +625,18 @@ def records():
 
                 if not encontrado:
                     tk.Label(vent_result, text="No tiene récords en este nivel.", fg="red").pack(anchor="w", padx=40)
-                    
 
-                tk.Label(vent_result, text="").pack()  # espacio entre niveles
-            def cerrar_todo():
-                global reloj_act
-                reloj_act = True
-                iniciar_relo()
-                vent_result.destroy()
-            vent_result.protocol("WM_DELETE_WINDOW", cerrar_todo)
+            tk.Label(vent_result, text="").pack()
+
+            vent_result.protocol("WM_DELETE_WINDOW",  lambda: cerrar_todo(vent_result))
             
    
 
     frame_btons= tk.Frame(reco)
     frame_btons.pack(pady=10)
-    btn_acept = tk.Button(frame_btons,text = "Aceptar",command=lambda: [mostrar_records(), reco.destroy()])
+    btn_acept = tk.Button(frame_btons,text = "Aceptar",command=lambda: mostrar_records(nombre))
     btn_acept.grid(row=0, column=0,padx=5)
-    btn_cancel = tk.Button(frame_btons,text = "Volver", command = reco.destroy)
+    btn_cancel = tk.Button(frame_btons,text = "Volver", command= lambda: cerrar_todo(reco))
     btn_cancel.grid(row=0, column=1,padx=5)
     
             
@@ -654,13 +649,24 @@ def colocar_numero(entry_widget, fila, col):
     global borrar_act
     global casi_selec
     global jugadas
-    if borrar_act== True: #En caso de que la función borrar este activa
+    if borrar_act == True:  # En caso de que la función borrar esté activa
+        valor_actual = entry_widget.get()
+        if valor_actual == "":
+            borrar_act = False
+            return
+
+        # Guardar jugada de borrado en la pila
+        pila_desh.append((fila, col, valor_actual, ""))  # De algo a vacío
+        pila_reha.clear()
+
         entry_widget.config(state="normal")
         entry_widget.delete(0, tk.END)
         entry_widget.config(state="readonly")
+
         if (fila, col) in jugadas:
             del jugadas[(fila, col)]
-        borrar_act = False#se vuelve a desactivar la información
+
+        borrar_act = False  # Se vuelve a desactivar el modo borrar
         return
     if numero_selec is None:
         messagebox.showerror("Error", "Debe seleccionar un número")
@@ -758,6 +764,7 @@ def juego():
     global tempo
     global dificul
     global btn_ini
+    global entry_nom
     jueg = tk.Toplevel(kaku)
     jueg.title("Jugar Kakuro")
     jueg.geometry("700x600")
@@ -874,12 +881,23 @@ def juego():
                            command=lambda: cargar_part(entry_nom.get()))
     btn_cargar.grid(row=1, column=2, pady=5,padx=5)
 
-    btn_record = tk.Button(frame_botones, text="Records",width=12, bg="yellow",command= records)
+    btn_record = tk.Button(frame_botones, text="Récords",width=12, bg="yellow",command=lambda: records(entry_nom.get()))
     btn_record.grid(row=1, column=3, pady=5,padx=5)
-
-    btn_cancel = tk.Button(frame_botones,text = "Volver",command= jueg.destroy,width=12, bg="red")
-    btn_cancel.grid(row=0, column=3,pady=5,padx=5)
-    
+#Función para mostrar el manual de usuario.
+def abrir_manual():
+    ruta_actual = os.path.dirname(os.path.abspath(__file__))
+    nombre_manu  = "kakuro_manual_de_usuario.pdf"
+    ruta_archivo = os.path.join(ruta_actual,nombre_manu)
+    subprocess.Popen([ruta_archivo],shell= True)
+#Función de opción ayuda.
+def acerca_de():
+    mensaje = (
+        "JUEGO DE LÓGICA KAKURO (SUMAS CRUZADAS)"
+        "Versión: Python 3.13.2\n"
+        "Fecha de creación: 28/06/2025\n"
+        "Autor: Ronny Fabricio Espinoza Cordero"
+    )
+    messagebox.showinfo("Información de programa",mensaje)
 #Interfaz grafica principal.
 kaku = tk.Tk()
 
@@ -897,11 +915,11 @@ filemenu = tk.Menu(menubar, tearoff=0)
 menubar.add_command(label="Jugar",command=juego)
 
 
-menubar.add_command(label="Configuración",command= configura)
-menubar.add_command(label = "Acerca de")
+menubar.add_command(label="Configurar",command= configura)
+menubar.add_command(label = "Acerca de",command = acerca_de)
 
 
-menubar.add_command(label = "Ayuda")
+menubar.add_command(label = "Ayuda",command = abrir_manual)
 menubar.add_command(label = "Cerrar", command= kaku.destroy)
 
 
